@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "AgroVision",
+    "slug": "agrovision",
+    "scheme": "agrovision",
+    "platforms": ["ios", "android", "web"]
+  }
+}
