@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+ai/data/
+ai/model/*.pth
+*.log
+.DS_Store
