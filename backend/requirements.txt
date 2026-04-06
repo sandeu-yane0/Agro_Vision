@@ -1,0 +1,28 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+python-dotenv==1.0.1
+httpx==0.27.0
+
+# LLM
+groq==0.9.0
+anthropic==0.30.0
+
+# Vision IA
+torch==2.3.1
+torchvision==0.18.1
+Pillow==10.3.0
+numpy==1.26.4
+
+# Base de données
+sqlalchemy==2.0.30
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Scraping prix marché
+beautifulsoup4==4.12.3
+requests==2.32.3
+
+# Utilitaires
+pydantic==2.7.4
+pydantic-settings==2.3.4

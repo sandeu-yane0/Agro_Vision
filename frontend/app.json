@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "AgroVision",
+    "slug": "agrovision",
+    "version": "2.0.0",
+    "scheme": "agrovision",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AgroVision utilise vos photos pour analyser les maladies de vos cultures.",
+          "cameraPermission": "AgroVision utilise la caméra pour photographier vos cultures."
+        }
+      ]
+    ]
+  }
+}
