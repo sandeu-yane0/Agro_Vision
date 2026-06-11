@@ -49,6 +49,13 @@ export default function ChatBubble({ message, isUser }: ChatBubbleProps) {
           {message.content}
         </Text>
 
+        {/* Indicateur hors-ligne */}
+        {message.pending ? (
+          <Text style={styles.pendingLabel}>
+             En attente de connexion — sera analysée automatiquement
+          </Text>
+        ) : null}
+
         {/* Timestamp */}
         <Text
           style={[
@@ -129,6 +136,14 @@ const styles = StyleSheet.create({
   },
   textAI: {
     color: COLORS.TEXT_PRIMARY,
+  },
+
+  // Indicateur hors-ligne
+  pendingLabel: {
+    fontSize: 12,
+    color: COLORS.WARNING,
+    marginTop: 6,
+    fontStyle: "italic",
   },
 
   // Timestamps

@@ -1,4 +1,4 @@
-import { MarketPrice, ChatMessage, Message } from "../types/index";
+import { MarketPrice, ChatMessage, Message, DiagnosisResult } from "../types/index";
 import { MARKET_DATA } from "../constants/data";
 
 const BASE_URL = "http://localhost:8000/api/v1";
@@ -64,6 +64,32 @@ export async function sendChatMessage(
     await new Promise((r) => setTimeout(r, 1200 + Math.random() * 800));
     return getSimulatedResponse(message);
   }
+}
+
+// ─── API diagnoseImage ──────────────────────────────────────────────────────
+
+export async function diagnoseImage(imageUri: string): Promise<DiagnosisResult> {
+  const filename = imageUri.split("/").pop() || "photo.jpg";
+  const extMatch = /\.(\w+)$/.exec(filename);
+  const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
+  const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+
+  const formData = new FormData();
+  formData.append("file", {
+    uri: imageUri,
+    name: filename,
+    type: mimeType,
+  } as unknown as Blob);
+
+  const response = await fetch(`${BASE_URL}/diagnosis`, {
+    method: "POST",
+    body: formData,
+    signal: AbortSignal.timeout(60000),
+  });
+
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  return response.json();
 }
 
 // ─── API getMarketPrices ───────────────────────────────────────────────────

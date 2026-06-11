@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+﻿import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,26 +13,26 @@ import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 
-import { Conversation } from "../types/index";
-import COLORS from "../constants/colors";
-import ConversationItem from "../components/ConversationItem";
-import * as storage from "../services/storage";
+import { Conversation } from "../../types/index";
+import COLORS from "../../constants/colors";
+import ConversationItem from "../../components/ConversationItem";
+import * as storage from "../../services/storage";
 
-// ─── Écran Historique ──────────────────────────────────────────────────────
+// â”€â”€â”€ Ã‰cran Historique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function HistoryScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Recharger à chaque fois que l'écran devient actif
+  // Recharger Ã  chaque fois que l'Ã©cran devient actif
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
         const convs = await storage.getAllConversations();
         if (active) {
-          // Tri par date décroissante (plus récente en premier)
+          // Tri par date dÃ©croissante (plus rÃ©cente en premier)
           const sorted = convs.sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
@@ -44,7 +44,7 @@ export default function HistoryScreen() {
     }, [])
   );
 
-  // ─── Supprimer une conversation ─────────────────────────────────────────
+  // â”€â”€â”€ Supprimer une conversation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleDelete = useCallback((id: string, title: string) => {
     Alert.alert(
       "Supprimer la conversation",
@@ -63,12 +63,12 @@ export default function HistoryScreen() {
     );
   }, []);
 
-  // ─── Supprimer tout ─────────────────────────────────────────────────────
+  // â”€â”€â”€ Supprimer tout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleClearAll = useCallback(() => {
     if (conversations.length === 0) return;
     Alert.alert(
       "Tout supprimer",
-      "Voulez-vous supprimer toutes les conversations ? Cette action est irréversible.",
+      "Voulez-vous supprimer toutes les conversations ? Cette action est irrÃ©versible.",
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -83,14 +83,14 @@ export default function HistoryScreen() {
     );
   }, [conversations]);
 
-  // ─── Ouvrir une conversation (naviguer vers chat) ───────────────────────
+  // â”€â”€â”€ Ouvrir une conversation (naviguer vers chat) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleOpen = useCallback((_conversation: Conversation) => {
     // Pour l'instant, on navigue vers le chat
     // TODO: passer les messages de la conversation au chat
     router.push("/");
   }, [router]);
 
-  // ─── Rendu d'un item ────────────────────────────────────────────────────
+  // â”€â”€â”€ Rendu d'un item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderItem = ({ item }: ListRenderItemInfo<Conversation>) => (
     <View style={styles.itemWrapper}>
       <ConversationItem
@@ -123,7 +123,7 @@ export default function HistoryScreen() {
         </TouchableOpacity>
       )}
 
-      {/* ─── Vide ─── */}
+      {/* â”€â”€â”€ Vide â”€â”€â”€ */}
       {!loading && conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons
@@ -133,7 +133,7 @@ export default function HistoryScreen() {
           />
           <Text style={styles.emptyTitle}>Aucune conversation</Text>
           <Text style={styles.emptySubtitle}>
-            Commencez à discuter avec AgroVision
+            Commencez Ã  discuter avec AgroVision
           </Text>
           <TouchableOpacity
             style={styles.startChatBtn}
@@ -141,11 +141,11 @@ export default function HistoryScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="chatbubble" size={18} color={COLORS.WHITE} />
-            <Text style={styles.startChatText}>Démarrer un chat</Text>
+            <Text style={styles.startChatText}>DÃ©marrer un chat</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        /* ─── Liste ─── */
+        /* â”€â”€â”€ Liste â”€â”€â”€ */
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}

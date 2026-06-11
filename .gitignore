@@ -10,6 +10,8 @@ backend/**/__pycache__/
 backend/.env
 backend/ai/model/*.pth
 backend/ai/data/
+backend/ai/*.zip
+frontend/.env
 
 # Général
 .DS_Store

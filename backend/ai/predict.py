@@ -116,14 +116,14 @@ def predict(image_bytes: bytes) -> dict:
 
 
 def _mock_result() -> dict:
-    """Résultat de démonstration quand le modèle n'est pas entraîné."""
+    """Résultat de démonstration quand le modèle n'est pas encore entraîné."""
     return {
-        "disease":    "Corn_(maize)___Common_rust_",
+        "disease":    "Cassava___mosaic_disease",
         "confidence": 84.2,
         "top3": [
-            {"classe": "Corn_(maize)___Common_rust_",        "score": 84.2},
-            {"classe": "Corn_(maize)___Northern_Leaf_Blight", "score": 9.1},
-            {"classe": "Corn_(maize)___healthy",              "score": 6.7},
+            {"classe": "Cassava___mosaic_disease",      "score": 84.2},
+            {"classe": "Cassava___bacterial_blight",    "score": 9.1},
+            {"classe": "Cassava___healthy",             "score": 6.7},
         ],
         "is_mock": True,
     }

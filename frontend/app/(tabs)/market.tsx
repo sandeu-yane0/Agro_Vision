@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+﻿import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,12 +12,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 
-import { MarketPrice } from "../types/index";
-import COLORS from "../constants/colors";
-import MarketCard from "../components/MarketCard";
-import { getMarketPrices } from "../services/api";
+import { MarketPrice } from "../../types/index";
+import COLORS from "../../constants/colors";
+import MarketCard from "../../components/MarketCard";
+import { getMarketPrices } from "../../services/api";
 
-// ─── Badge LIVE clignotant ─────────────────────────────────────────────────
+// â”€â”€â”€ Badge LIVE clignotant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function LiveBadge() {
   const pulse = useRef(new Animated.Value(1)).current;
@@ -39,7 +39,7 @@ function LiveBadge() {
   );
 }
 
-// ─── Skeleton card ────────────────────────────────────────────────────────
+// â”€â”€â”€ Skeleton card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SkeletonCard() {
   const shimmer = useRef(new Animated.Value(0.4)).current;
@@ -62,7 +62,7 @@ function SkeletonCard() {
   );
 }
 
-// ─── Écran Marché ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Ã‰cran MarchÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type ScreenState = "idle" | "loading" | "error";
 
@@ -110,11 +110,11 @@ export default function MarketScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* ─── En-tête ─── */}
+      {/* â”€â”€â”€ En-tÃªte â”€â”€â”€ */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerSubtitle}>
-            Sources : MINADER Cameroun | Marchés locaux
+            Sources : MINADER Cameroun | MarchÃ©s locaux
           </Text>
           <LiveBadge />
         </View>
@@ -129,7 +129,7 @@ export default function MarketScreen() {
         </Animated.View>
       </View>
 
-      {/* ─── Contenu ─── */}
+      {/* â”€â”€â”€ Contenu â”€â”€â”€ */}
       {state === "loading" ? (
         <View style={styles.listContent}>
           {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
@@ -139,7 +139,7 @@ export default function MarketScreen() {
           <Ionicons name="wifi-outline" size={56} color={COLORS.TEXT_MUTED} />
           <Text style={styles.errorText}>Impossible de charger les prix</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => loadPrices(true)}>
-            <Text style={styles.retryText}>Réessayer</Text>
+            <Text style={styles.retryText}>RÃ©essayer</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -159,7 +159,7 @@ export default function MarketScreen() {
           }
           ListFooterComponent={
             <Text style={styles.footerNote}>
-              📊 Sources : MINADER Cameroun | Open Food Facts | Marchés locaux
+              ðŸ“Š Sources : MINADER Cameroun | Open Food Facts | MarchÃ©s locaux
             </Text>
           }
         />
