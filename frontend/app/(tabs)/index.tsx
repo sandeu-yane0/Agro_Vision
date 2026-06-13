@@ -81,7 +81,7 @@ export default function ChatScreen() {
   const [inputText, setInputText]       = useState("");
   const [imageUri, setImageUri]         = useState<string | null>(null);
   const [isTyping, setIsTyping]         = useState(false);
-  const [conversationId]                = useState(generateId());
+  const [conversationId, setConversationId] = useState(generateId());
   const isConnected                     = useNetworkStatus();
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -280,7 +280,10 @@ export default function ChatScreen() {
         {
           text: "Nouvelle",
           style: "default",
-          onPress: () => setMessages([]),
+          onPress: () => {
+            setMessages([]);
+            setConversationId(generateId());
+          },
         },
       ]
     );

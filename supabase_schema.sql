@@ -135,3 +135,170 @@ CREATE POLICY "Marquer comme lu"
 
 -- OU via SQL :
 ALTER PUBLICATION supabase_realtime ADD TABLE dm_messages;
+
+-- ─── 6. Rôles & vérification ──────────────────────────────────────────────
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'agriculteur'
+  CHECK (role IN ('agriculteur','admin'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Pour créer le premier admin, exécuter manuellement :
+-- UPDATE profiles SET role = 'admin' WHERE id = '<uuid-du-compte>';
+
+-- ─── 7. Signalements de comptes ────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS account_reports (
+  id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  reporter_id      UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  reported_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  reason           TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','reviewed')),
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT no_self_report CHECK (reporter_id <> reported_user_id)
+);
+
+ALTER TABLE account_reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Créer un signalement"
+  ON account_reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+
+CREATE POLICY "Admin lit les signalements"
+  ON account_reports FOR SELECT
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+CREATE POLICY "Admin traite les signalements"
+  ON account_reports FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- ─── 8. Coopératives ────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS cooperatives (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name        TEXT NOT NULL,
+  culture     TEXT NOT NULL,
+  description TEXT,
+  founder_id  UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended')),
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE cooperatives ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Coopératives visibles par tous"
+  ON cooperatives FOR SELECT USING (true);
+
+CREATE POLICY "Créer une coopérative"
+  ON cooperatives FOR INSERT WITH CHECK (auth.uid() = founder_id);
+
+CREATE POLICY "Fondateur ou admin modifient la coopérative"
+  ON cooperatives FOR UPDATE
+  USING (
+    auth.uid() = founder_id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- ─── 9. Membres de coopérative ─────────────────────────────────────────────
+-- status='pending'   → invitation envoyée par le fondateur, en attente de réponse du membre
+-- status='requested' → demande pour rejoindre envoyée par l'agriculteur, en attente du fondateur
+-- status='accepted'  → membre actif (accès au chat)
+-- status='refused'   → refusé par l'une ou l'autre partie
+
+CREATE TABLE IF NOT EXISTS cooperative_members (
+  id             UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cooperative_id UUID REFERENCES cooperatives(id) ON DELETE CASCADE NOT NULL,
+  member_id      UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  role           TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('founder','member')),
+  status         TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','refused','requested')),
+  invited_at     TIMESTAMPTZ DEFAULT NOW(),
+  responded_at   TIMESTAMPTZ,
+  UNIQUE (cooperative_id, member_id)
+);
+
+ALTER TABLE cooperative_members ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Voir les membres de ses coopératives"
+  ON cooperative_members FOR SELECT
+  USING (
+    auth.uid() = member_id
+    OR EXISTS (SELECT 1 FROM cooperatives WHERE id = cooperative_id AND founder_id = auth.uid())
+  );
+
+CREATE POLICY "Inviter ou demander à rejoindre"
+  ON cooperative_members FOR INSERT
+  WITH CHECK (
+    auth.uid() = member_id
+    OR EXISTS (SELECT 1 FROM cooperatives WHERE id = cooperative_id AND founder_id = auth.uid())
+  );
+
+CREATE POLICY "Répondre à une invitation/demande"
+  ON cooperative_members FOR UPDATE
+  USING (
+    auth.uid() = member_id
+    OR EXISTS (SELECT 1 FROM cooperatives WHERE id = cooperative_id AND founder_id = auth.uid())
+  );
+
+-- ─── 10. Messages de groupe coopérative ────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS cooperative_messages (
+  id             UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cooperative_id UUID REFERENCES cooperatives(id) ON DELETE CASCADE NOT NULL,
+  sender_id      UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  content        TEXT NOT NULL,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS coop_messages_idx ON cooperative_messages (cooperative_id, created_at);
+
+ALTER TABLE cooperative_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Lire si membre accepté"
+  ON cooperative_messages FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM cooperative_members
+    WHERE cooperative_id = cooperative_messages.cooperative_id
+      AND member_id = auth.uid() AND status = 'accepted'
+  ));
+
+CREATE POLICY "Écrire si membre accepté"
+  ON cooperative_messages FOR INSERT
+  WITH CHECK (
+    auth.uid() = sender_id
+    AND EXISTS (
+      SELECT 1 FROM cooperative_members
+      WHERE cooperative_id = cooperative_messages.cooperative_id
+        AND member_id = auth.uid() AND status = 'accepted'
+    )
+  );
+
+-- ─── 11. Notifications ──────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  type       TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  body       TEXT,
+  data       JSONB DEFAULT '{}',
+  is_read    BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at DESC);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Voir ses notifications"
+  ON notifications FOR SELECT USING (auth.uid() = user_id);
+
+-- Permissif par nécessité : un agriculteur doit pouvoir notifier un autre
+-- (invitation, demande de rejoindre, réponse à une demande).
+CREATE POLICY "Créer une notification pour autrui"
+  ON notifications FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Marquer ses notifications comme lues"
+  ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- ─── 12. Realtime (coopératives & notifications) ───────────────────────────
+
+ALTER PUBLICATION supabase_realtime ADD TABLE cooperative_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;

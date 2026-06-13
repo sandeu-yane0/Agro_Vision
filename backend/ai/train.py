@@ -14,9 +14,15 @@ import time
 # ─── Configuration ────────────────────────────────────────────────────────────
 DATA_PLANTVILLAGE = "ai/data/plantvillage/plantvillage dataset/color"
 DATA_CUSTOM       = "ai/data/custom/data"
-MODEL_OUTPUT      = "ai/model/agrovision.pth"
-CHECKPOINT_PATH   = "ai/model/checkpoint.pth"
-CLASSES_OUTPUT    = "ai/class_names.json"
+
+# Si un dossier Drive est monté (Colab), on y écrit directement le modèle/checkpoint
+# pour survivre aux déconnexions de runtime. Sinon (local), on reste dans ai/model.
+DRIVE_DIR = "/content/drive/MyDrive/AgroVision"
+OUTPUT_DIR = DRIVE_DIR if os.path.exists("/content/drive/MyDrive") else "ai/model"
+
+MODEL_OUTPUT      = os.path.join(OUTPUT_DIR, "agrovision.pth")
+CHECKPOINT_PATH   = os.path.join(OUTPUT_DIR, "checkpoint.pth")
+CLASSES_OUTPUT    = os.path.join(OUTPUT_DIR, "class_names.json")
 
 IMG_SIZE    = 224
 BATCH_SIZE  = 32
@@ -120,7 +126,7 @@ def load_dataset():
 
 # ─── Entraînement ─────────────────────────────────────────────────────────────
 def train():
-    os.makedirs("ai/model", exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     full_dataset, classes = load_dataset()
     num_classes = len(classes)

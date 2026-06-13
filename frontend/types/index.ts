@@ -61,6 +61,8 @@ export interface FarmerProfile {
   cultures: string[];
   avatar_url: string | null;
   bio: string | null;
+  role: "agriculteur" | "admin";
+  is_verified: boolean;
   created_at: string;
   updated_at?: string;
 }
@@ -83,4 +85,62 @@ export interface DMConversation {
   created_at: string;
   last_message_at: string;
   last_message: string | null;
+}
+
+// ─── Signalements de comptes ──────────────────────────────────────────────
+
+export interface AccountReport {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reason: string;
+  status: "pending" | "reviewed";
+  created_at: string;
+}
+
+// ─── Coopératives agricoles ───────────────────────────────────────────────
+
+export interface Cooperative {
+  id: string;
+  name: string;
+  culture: string;
+  description: string | null;
+  founder_id: string;
+  status: "active" | "suspended";
+  created_at: string;
+}
+
+export interface CooperativeMember {
+  id: string;
+  cooperative_id: string;
+  member_id: string;
+  role: "founder" | "member";
+  status: "pending" | "accepted" | "refused" | "requested";
+  invited_at: string;
+  responded_at: string | null;
+}
+
+export interface CooperativeMessage {
+  id: string;
+  cooperative_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
+
+// ─── Notifications ─────────────────────────────────────────────────────────
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type:
+    | "cooperative_invite"
+    | "cooperative_join_request"
+    | "cooperative_member_joined"
+    | "cooperative_member_refused";
+  title: string;
+  body: string | null;
+  data: Record<string, any>;
+  is_read: boolean;
+  created_at: string;
 }

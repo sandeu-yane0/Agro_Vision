@@ -15,15 +15,11 @@ import { StatusBar } from "expo-status-bar";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import COLORS from "../../constants/colors";
+import { CULTURES_OPTIONS } from "../../constants/cultures";
 
 const REGIONS = [
   "Centre", "Littoral", "Ouest", "Nord-Ouest", "Sud-Ouest",
   "Sud", "Est", "Adamaoua", "Nord", "Extrême-Nord",
-];
-
-const CULTURES_OPTIONS = [
-  "Maïs 🌽", "Manioc 🥔", "Plantain 🍌", "Arachide 🥜",
-  "Tomate 🍅", "Cacao 🍫", "Café ☕", "Riz 🌾", "Autre",
 ];
 
 export default function SignupScreen() {

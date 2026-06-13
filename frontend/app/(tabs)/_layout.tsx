@@ -9,22 +9,28 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../../context/AuthContext";
+import { useUnreadNotifications } from "../../lib/useUnreadNotifications";
 import COLORS from "../../constants/colors";
 
 const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
 
-const TAB_ITEMS = [
-  { name: "index",   href: "/",         label: "Chat IA",     icon: "chatbubble-outline",       iconActive: "chatbubble" },
-  { name: "market",  href: "/market",   label: "Marché",      icon: "trending-up-outline",       iconActive: "trending-up" },
-  { name: "history", href: "/history",  label: "Historique",  icon: "time-outline",              iconActive: "time" },
-  { name: "farmers", href: "/farmers",  label: "Agriculteurs",icon: "people-outline",            iconActive: "people" },
-  { name: "profile", href: "/profile",  label: "Profil",      icon: "person-circle-outline",     iconActive: "person-circle" },
+const BASE_TAB_ITEMS = [
+  { name: "index",        href: "/",              label: "Chat IA",      icon: "chatbubble-outline",       iconActive: "chatbubble" },
+  { name: "market",       href: "/market",        label: "Marché",       icon: "trending-up-outline",      iconActive: "trending-up" },
+  { name: "history",      href: "/history",       label: "Historique",   icon: "time-outline",             iconActive: "time" },
+  { name: "farmers",      href: "/farmers",       label: "Agriculteurs", icon: "people-outline",           iconActive: "people" },
+  { name: "cooperatives", href: "/cooperatives",  label: "Coopératives", icon: "people-circle-outline",    iconActive: "people-circle" },
+  { name: "profile",      href: "/profile",       label: "Profil",       icon: "person-circle-outline",    iconActive: "person-circle" },
 ] as const;
+
+const ADMIN_TAB = {
+  name: "admin", href: "/admin", label: "Admin", icon: "shield-checkmark-outline", iconActive: "shield-checkmark",
+} as const;
 
 // ─── Sidebar desktop ──────────────────────────────────────────────────────
 
-function SidebarNav() {
+function SidebarNav({ tabs }: { tabs: readonly { name: string; href: string; label: string; icon: string; iconActive: string }[] }) {
   const router   = useRouter();
   const pathname = usePathname();
   const { signOut } = useAuth();
@@ -49,7 +55,7 @@ function SidebarNav() {
 
       {/* Nav */}
       <View style={sidebar.nav}>
-        {TAB_ITEMS.map((tab) => {
+        {tabs.map((tab) => {
           const focused = pathname === tab.href;
           return (
             <TouchableOpacity
@@ -84,11 +90,11 @@ function SidebarNav() {
 
 // ─── Barre du bas (mobile) ────────────────────────────────────────────────
 
-function BottomBar({ state, navigation }: BottomTabBarProps) {
+function BottomBar({ state, navigation, tabs }: BottomTabBarProps & { tabs: readonly { name: string; href: string; label: string; icon: string; iconActive: string }[] }) {
   return (
     <View style={bottom.bar}>
-      {TAB_ITEMS.map((tab, index) => {
-        const focused = state.index === index;
+      {tabs.map((tab) => {
+        const focused = state.routes[state.index]?.name === tab.name;
         return (
           <TouchableOpacity
             key={tab.name}
@@ -116,17 +122,22 @@ function BottomBar({ state, navigation }: BottomTabBarProps) {
 export default function TabsLayout() {
   const { width } = useWindowDimensions();
   const isDesktop  = width >= BREAKPOINT;
+  const { profile } = useAuth();
+  const unreadCount = useUnreadNotifications();
+  const router = useRouter();
+
+  const tabs = profile?.role === "admin" ? [...BASE_TAB_ITEMS, ADMIN_TAB] : BASE_TAB_ITEMS;
 
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
       {/* Sidebar fixe à gauche sur desktop */}
-      {isDesktop && <SidebarNav />}
+      {isDesktop && <SidebarNav tabs={tabs} />}
 
       {/* Contenu des tabs */}
       <View style={{ flex: 1 }}>
         <Tabs
           tabBar={(props) =>
-            isDesktop ? <View style={{ height: 0 }} /> : <BottomBar {...props} />
+            isDesktop ? <View style={{ height: 0 }} /> : <BottomBar {...props} tabs={tabs} />
           }
           screenOptions={{
             headerStyle: styles.header as never,
@@ -144,14 +155,26 @@ export default function TabsLayout() {
                 <View style={styles.onlineRow}>
                   <View style={styles.onlineDot} />
                   <Text style={styles.onlineText}>En ligne</Text>
+                  <TouchableOpacity onPress={() => router.push("/notifications")} style={styles.bellBtn}>
+                    <Ionicons name="notifications-outline" size={20} color={COLORS.TEXT_PRIMARY} />
+                    {unreadCount > 0 && (
+                      <View style={styles.bellBadge}>
+                        <Text style={styles.bellBadgeText}>
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
                 </View>
               ),
             }}
           />
-          <Tabs.Screen name="market"  options={{ headerTitle: "Prix du Marché" }} />
-          <Tabs.Screen name="history" options={{ headerTitle: "Historique" }} />
-          <Tabs.Screen name="farmers" options={{ headerTitle: "Agriculteurs" }} />
-          <Tabs.Screen name="profile" options={{ headerTitle: "Mon Profil" }} />
+          <Tabs.Screen name="market"       options={{ headerTitle: "Prix du Marché" }} />
+          <Tabs.Screen name="history"      options={{ headerTitle: "Historique" }} />
+          <Tabs.Screen name="farmers"      options={{ headerTitle: "Agriculteurs" }} />
+          <Tabs.Screen name="cooperatives" options={{ headerTitle: "Coopératives" }} />
+          <Tabs.Screen name="profile"      options={{ headerTitle: "Mon Profil" }} />
+          <Tabs.Screen name="admin"        options={{ headerTitle: "Administration" }} />
         </Tabs>
       </View>
     </View>
@@ -239,4 +262,18 @@ const styles = StyleSheet.create({
   },
   onlineDot:  { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.SUCCESS },
   onlineText: { fontSize: 13, color: COLORS.SUCCESS, fontWeight: "600" },
+  bellBtn: { marginLeft: 10, padding: 2 },
+  bellBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.DANGER,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  bellBadgeText: { color: COLORS.WHITE, fontSize: 9, fontWeight: "700" },
 });

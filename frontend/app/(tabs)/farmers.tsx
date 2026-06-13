@@ -17,6 +17,8 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import COLORS from "../../constants/colors";
 import { FarmerProfile } from "../../types/index";
+import VerifiedBadge from "../../components/VerifiedBadge";
+import ReportModal from "../../components/ReportModal";
 
 // ─── Avatar initiales ─────────────────────────────────────────────────────
 
@@ -47,15 +49,20 @@ function Avatar({ name, size = 48 }: { name: string; size?: number }) {
 function FarmerCard({
   farmer,
   onMessage,
+  onReport,
 }: {
   farmer: FarmerProfile;
   onMessage: () => void;
+  onReport: () => void;
 }) {
   return (
     <View style={styles.card}>
       <Avatar name={farmer.full_name} />
       <View style={styles.cardInfo}>
-        <Text style={styles.farmerName}>{farmer.full_name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.farmerName}>{farmer.full_name}</Text>
+          <VerifiedBadge verified={farmer.is_verified} />
+        </View>
         {farmer.region && (
           <View style={styles.regionRow}>
             <Ionicons name="location-outline" size={12} color={COLORS.TEXT_MUTED} />
@@ -75,6 +82,13 @@ function FarmerCard({
           </View>
         )}
       </View>
+      <TouchableOpacity
+        style={styles.reportBtn}
+        onPress={onReport}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="flag-outline" size={16} color={COLORS.TEXT_MUTED} />
+      </TouchableOpacity>
       <TouchableOpacity
         style={styles.msgBtn}
         onPress={onMessage}
@@ -96,11 +110,12 @@ export default function FarmersScreen() {
   const [search, setSearch]       = useState("");
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [reportTarget, setReportTarget] = useState<FarmerProfile | null>(null);
 
   const loadFarmers = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, region, cultures, avatar_url, bio")
+      .select("id, full_name, region, cultures, avatar_url, bio, role, is_verified")
       .neq("id", user?.id ?? "")
       .order("full_name");
 
@@ -207,6 +222,7 @@ export default function FarmersScreen() {
             <FarmerCard
               farmer={item}
               onMessage={() => handleMessage(item)}
+              onReport={() => setReportTarget(item)}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -224,6 +240,15 @@ export default function FarmersScreen() {
               {filtered.length} agriculteur{filtered.length > 1 ? "s" : ""}
             </Text>
           }
+        />
+      )}
+
+      {reportTarget && (
+        <ReportModal
+          visible={!!reportTarget}
+          reportedUserId={reportTarget.id}
+          reportedUserName={reportTarget.full_name}
+          onClose={() => setReportTarget(null)}
         />
       )}
     </View>
@@ -286,6 +311,7 @@ const styles = StyleSheet.create({
   avatarText: { color: COLORS.WHITE, fontWeight: "700" },
 
   cardInfo: { flex: 1, gap: 4 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   farmerName: { fontSize: 15, fontWeight: "700", color: COLORS.TEXT_PRIMARY },
 
   regionRow: { flexDirection: "row", alignItems: "center", gap: 4 },
@@ -300,6 +326,14 @@ const styles = StyleSheet.create({
   },
   cultureText: { fontSize: 11, color: COLORS.TEXT_SECONDARY },
   moreText: { fontSize: 11, color: COLORS.TEXT_MUTED, alignSelf: "center" },
+
+  reportBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   msgBtn: {
     backgroundColor: COLORS.PRIMARY,
