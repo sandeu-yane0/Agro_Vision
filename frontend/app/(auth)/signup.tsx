@@ -16,6 +16,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import COLORS from "../../constants/colors";
 import { CULTURES_OPTIONS } from "../../constants/cultures";
+import AppLogo from "../../components/AppLogo";
 
 const REGIONS = [
   "Centre", "Littoral", "Ouest", "Nord-Ouest", "Sud-Ouest",
@@ -83,8 +84,7 @@ export default function SignupScreen() {
       >
         {/* Logo */}
         <View style={styles.logoWrap}>
-          <Text style={styles.logoEmoji}>🌱</Text>
-          <Text style={styles.logoTitle}>AgroVision</Text>
+          <AppLogo size="md" />
         </View>
 
         <View style={styles.card}>
@@ -206,8 +206,6 @@ const styles = StyleSheet.create({
   },
 
   logoWrap: { alignItems: "center", marginBottom: 28 },
-  logoEmoji: { fontSize: 48, marginBottom: 8 },
-  logoTitle: { fontSize: 28, fontWeight: "800", color: COLORS.TEXT_PRIMARY },
 
   card: {
     backgroundColor: COLORS.BG_CARD,

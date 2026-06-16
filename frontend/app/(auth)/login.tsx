@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { supabase } from "../../lib/supabase";
 import COLORS from "../../constants/colors";
+import AppLogo from "../../components/AppLogo";
 
 // ─── Saisie du code OTP (6 cases) ─────────────────────────────────────────
 
@@ -188,9 +189,8 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View style={styles.logoWrap}>
-          <Text style={styles.logoEmoji}>🌱</Text>
-          <Text style={styles.logoTitle}>AgroVision</Text>
-          <Text style={styles.logoSub}>Votre agronome IA</Text>
+          <AppLogo size="lg" />
+          <Text style={styles.logoSub}>Conseil agricole du Cameroun</Text>
         </View>
 
         <View style={styles.card}>
@@ -316,15 +316,8 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
 
-  logoWrap: { alignItems: "center", marginBottom: 40 },
-  logoEmoji: { fontSize: 64, marginBottom: 12 },
-  logoTitle: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: COLORS.TEXT_PRIMARY,
-    letterSpacing: 0.5,
-  },
-  logoSub: { fontSize: 15, color: COLORS.TEXT_SECONDARY, marginTop: 4 },
+  logoWrap: { alignItems: "center", marginBottom: 40, gap: 16 },
+  logoSub: { fontSize: 14, color: COLORS.TEXT_MUTED, letterSpacing: 0.2 },
 
   card: {
     backgroundColor: COLORS.BG_CARD,

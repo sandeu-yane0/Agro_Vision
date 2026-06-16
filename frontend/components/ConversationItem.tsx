@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.BG_CARD,
     borderRadius: 12,
     padding: 14,
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.BORDER,
     gap: 12,

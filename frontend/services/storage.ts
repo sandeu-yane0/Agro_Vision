@@ -3,6 +3,33 @@ import { Conversation } from "../types/index";
 
 const STORAGE_KEY = "@agrovision_conversations";
 
+// ─── Correction encodage double-UTF-8 ────────────────────────────────────────
+// Corrige les chaînes stockées avec double encodage UTF-8 (ex: "ðŸ"·" → "📷")
+
+function fixEncoding(str: string): string {
+  if (!str || !/[-ÿ]/.test(str)) return str;
+  try {
+    const bytes = Uint8Array.from({ length: str.length }, (_, i) => str.charCodeAt(i) & 0xFF);
+    const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return decoded.length < str.length ? decoded : str;
+  } catch {
+    return str;
+  }
+}
+
+function fixConversation(conv: Conversation): Conversation {
+  return {
+    ...conv,
+    title:   fixEncoding(conv.title),
+    preview: fixEncoding(conv.preview),
+    messages: conv.messages.map((m) => ({
+      ...m,
+      content: fixEncoding(m.content),
+    })),
+  };
+}
+
+
 // ─── Sauvegarder une conversation ─────────────────────────────────────────
 
 export async function saveConversation(conv: Conversation): Promise<void> {
@@ -26,7 +53,8 @@ export async function getAllConversations(): Promise<Conversation[]> {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEY);
     if (!data) return [];
-    return JSON.parse(data) as Conversation[];
+    const convs = JSON.parse(data) as Conversation[];
+    return convs.map(fixConversation);
   } catch (error) {
     console.error("[Storage] getAllConversations:", error);
     return [];

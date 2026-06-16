@@ -3,6 +3,43 @@ import { MARKET_DATA } from "../constants/data";
 
 const BASE_URL = "http://localhost:8000/api/v1";
 
+// ─── Détection météo ───────────────────────────────────────────────────────
+
+const WEATHER_KEYWORDS = ["météo", "meteo", "pluie", "climat", "climate", "temps qu", "température", "temperature", "prévision", "prevision", "forecast"];
+
+const VILLES_CAMEROUN: Record<string, string> = {
+  "yaoundé": "yaoundé", "yaounde": "yaoundé",
+  "douala": "douala",
+  "bafoussam": "bafoussam",
+  "garoua": "garoua",
+  "bertoua": "bertoua",
+  "ebolowa": "ebolowa",
+  "bafia": "bafia",
+};
+
+function isWeatherQuery(message: string): boolean {
+  const lower = message.toLowerCase();
+  return WEATHER_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function detectVille(message: string): string {
+  const lower = message.toLowerCase();
+  for (const [alias, canonical] of Object.entries(VILLES_CAMEROUN)) {
+    if (lower.includes(alias)) return canonical;
+  }
+  return "yaoundé";
+}
+
+async function fetchWeatherText(ville: string): Promise<string> {
+  const response = await fetch(
+    `${BASE_URL}/weather/text?ville=${encodeURIComponent(ville)}`,
+    { signal: AbortSignal.timeout(10000) }
+  );
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  return data.text as string;
+}
+
 // ─── Réponses simulées intelligentes ───────────────────────────────────────
 
 function getSimulatedResponse(message: string): string {
@@ -24,8 +61,8 @@ function getSimulatedResponse(message: string): string {
     return `📅 **Calendrier Agricole Cameroun**\n\n**Grande saison des pluies (mars–juin) :**\n• Maïs 🌽 — semis idéal en mars-avril\n• Arachides 🥜 — semis en mars-mai\n• Légumes verts — toute la saison\n\n**Petite saison (août–novembre) :**\n• Maïs 🌽 — 2ème cycle possible\n• Manioc 🥔 — plantation possible toute l'année\n\n**Saison sèche :** Privilégiez les cultures avec irrigation ou le stockage/transformation.`;
   }
 
-  if (lowerMsg.includes("météo") || lowerMsg.includes("pluie") || lowerMsg.includes("climate") || lowerMsg.includes("climat")) {
-    return `☁️ **Météo Agricole**\n\nLes prévisions météo agricoles pour votre région au Cameroun :\n\n🌧️ **Prochains 7 jours :** Pluies modérées attendues (15-25 mm)\n🌡️ **Températures :** 22–28°C (favorables)\n💨 **Vent :** Faible à modéré — bon pour la pollinisation\n\n✅ **Conseil :** Conditions favorables pour les traitements phytosanitaires. Évitez de traiter 24h avant les pluies prévues.\n\n⚠️ Consultez l'IRAD Cameroun pour des prévisions locales précises.`;
+  if (isWeatherQuery(lowerMsg)) {
+    return `☁️ **Météo Agricole**\n\nDonnées météo indisponibles (serveur hors ligne).\n\nConsultez l'IRAD Cameroun ou Météo France Afrique pour les prévisions locales.`;
   }
 
   if (lowerMsg.includes("cacao") || lowerMsg.includes("café") || lowerMsg.includes("prix")) {
@@ -47,6 +84,18 @@ export async function sendChatMessage(
   imageUri: string | null,
   history: ChatMessage[]
 ): Promise<string> {
+  // Requête météo : appel direct sur l'endpoint /weather/text (bypass LLM)
+  if (isWeatherQuery(message)) {
+    try {
+      const ville = detectVille(message);
+      const weatherText = await fetchWeatherText(ville);
+      return `☁️ **Météo Agricole — ${ville.charAt(0).toUpperCase() + ville.slice(1)}**\n\n${weatherText}\n\n💡 Données en temps réel via Open-Meteo. Planifiez vos traitements en évitant les 24h avant une pluie prévue.`;
+    } catch {
+      // Backend météo indisponible → fallback simulation
+      return getSimulatedResponse(message);
+    }
+  }
+
   try {
     const response = await fetch(`${BASE_URL}/chat`, {
       method: "POST",
@@ -75,11 +124,16 @@ export async function diagnoseImage(imageUri: string): Promise<DiagnosisResult> 
   const mimeType = ext === "png" ? "image/png" : "image/jpeg";
 
   const formData = new FormData();
-  formData.append("file", {
-    uri: imageUri,
-    name: filename,
-    type: mimeType,
-  } as unknown as Blob);
+
+  if (typeof document !== "undefined") {
+    // Web : convertir l'URI (blob: ou data:) en vrai Blob
+    const res = await fetch(imageUri);
+    const blob = await res.blob();
+    formData.append("file", blob, filename);
+  } else {
+    // React Native : syntaxe native
+    formData.append("file", { uri: imageUri, name: filename, type: mimeType } as unknown as Blob);
+  }
 
   const response = await fetch(`${BASE_URL}/diagnosis`, {
     method: "POST",

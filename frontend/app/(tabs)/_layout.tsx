@@ -11,6 +11,7 @@ import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadNotifications } from "../../lib/useUnreadNotifications";
 import COLORS from "../../constants/colors";
+import AppLogo from "../../components/AppLogo";
 
 const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
@@ -44,11 +45,7 @@ function SidebarNav({ tabs }: { tabs: readonly { name: string; href: string; lab
     <View style={sidebar.container}>
       {/* Logo */}
       <View style={sidebar.logo}>
-        <Text style={sidebar.logoEmoji}>🌱</Text>
-        <View>
-          <Text style={sidebar.logoTitle}>AgroVision</Text>
-          <Text style={sidebar.logoSub}>Agronome IA</Text>
-        </View>
+        <AppLogo size="sm" showTagline />
       </View>
 
       <View style={sidebar.divider} />
@@ -149,12 +146,15 @@ export default function TabsLayout() {
             name="index"
             options={{
               headerTitle: () => (
-                <Text style={styles.chatTitle}>🌱 AgroVision</Text>
+                <AppLogo size="sm" />
               ),
               headerRight: () => (
                 <View style={styles.onlineRow}>
                   <View style={styles.onlineDot} />
                   <Text style={styles.onlineText}>En ligne</Text>
+                  <TouchableOpacity onPress={() => router.push("/weather")} style={styles.weatherBtn}>
+                    <Ionicons name="partly-sunny-outline" size={20} color={COLORS.TEXT_PRIMARY} />
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => router.push("/notifications")} style={styles.bellBtn}>
                     <Ionicons name="notifications-outline" size={20} color={COLORS.TEXT_PRIMARY} />
                     {unreadCount > 0 && (
@@ -193,15 +193,9 @@ const sidebar = StyleSheet.create({
     paddingHorizontal: 16,
   },
   logo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
     marginBottom: 8,
     paddingHorizontal: 4,
   },
-  logoEmoji:  { fontSize: 32 },
-  logoTitle:  { fontSize: 18, fontWeight: "800", color: COLORS.TEXT_PRIMARY },
-  logoSub:    { fontSize: 11, color: COLORS.TEXT_MUTED },
   divider:    { height: 1, backgroundColor: COLORS.BORDER, marginVertical: 16 },
   nav:        { gap: 4 },
   item: {
@@ -253,7 +247,6 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.BORDER,
   },
   headerTitle:  { color: COLORS.TEXT_PRIMARY, fontSize: 17, fontWeight: "700" },
-  chatTitle:    { fontSize: 20, fontWeight: "800", color: COLORS.TEXT_PRIMARY },
   onlineRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -262,7 +255,8 @@ const styles = StyleSheet.create({
   },
   onlineDot:  { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.SUCCESS },
   onlineText: { fontSize: 13, color: COLORS.SUCCESS, fontWeight: "600" },
-  bellBtn: { marginLeft: 10, padding: 2 },
+  weatherBtn: { marginLeft: 8, padding: 2 },
+  bellBtn: { marginLeft: 8, padding: 2 },
   bellBadge: {
     position: "absolute",
     top: -4,

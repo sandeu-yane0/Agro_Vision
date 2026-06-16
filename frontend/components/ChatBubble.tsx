@@ -8,6 +8,26 @@ import {
 import { Message } from "../types/index";
 import COLORS from "../constants/colors";
 
+function renderMarkdown(text: string, baseStyle: object) {
+  const lines = text.split("\n");
+  return lines.map((line, li) => {
+    const parts: React.ReactNode[] = [];
+    const regex = /\*\*(.+?)\*\*/g;
+    let last = 0, m: RegExpExecArray | null, key = 0;
+    while ((m = regex.exec(line)) !== null) {
+      if (m.index > last) parts.push(<Text key={key++}>{line.slice(last, m.index)}</Text>);
+      parts.push(<Text key={key++} style={{ fontWeight: "700" }}>{m[1]}</Text>);
+      last = m.index + m[0].length;
+    }
+    if (last < line.length) parts.push(<Text key={key++}>{line.slice(last)}</Text>);
+    return (
+      <Text key={li} style={[baseStyle, li > 0 && { marginTop: line === "" ? 4 : 0 }]}>
+        {parts.length > 0 ? parts : ""}
+      </Text>
+    );
+  });
+}
+
 interface ChatBubbleProps {
   message: Message;
   isUser: boolean;
@@ -44,10 +64,10 @@ export default function ChatBubble({ message, isUser }: ChatBubbleProps) {
           />
         ) : null}
 
-        {/* Contenu texte */}
-        <Text style={[styles.text, isUser ? styles.textUser : styles.textAI]}>
-          {message.content}
-        </Text>
+        {/* Contenu texte avec rendu Markdown simple */}
+        <View>
+          {renderMarkdown(message.content, [styles.text, isUser ? styles.textUser : styles.textAI])}
+        </View>
 
         {/* Indicateur hors-ligne */}
         {message.pending ? (

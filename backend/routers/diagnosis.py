@@ -33,13 +33,21 @@ async def diagnose(file: UploadFile = File(...)):
         # Prédiction vision IA
         diagnosis = predict_disease(image_bytes)
 
-        # Enrichissement par le LLM
-        image_context = get_image_context_for_llm(diagnosis)
-        conseil = get_llm_response(
-            message="Donne un conseil pratique et adapté au Cameroun pour traiter cette maladie.",
-            history=[],
-            image_context=image_context,
-        )
+        # Enrichissement par le LLM (optionnel — dégradation gracieuse si hors-ligne)
+        try:
+            image_context = get_image_context_for_llm(diagnosis)
+            conseil = get_llm_response(
+                message=(
+                    "En 2 à 3 phrases courtes, donne uniquement un conseil terrain concret et adapté "
+                    "au contexte camerounais pour cette maladie. "
+                    "Ne répète pas le diagnostic, la cause, le traitement ou la prévention déjà affichés. "
+                    "Écris en prose simple, sans titre, sans liste, sans emojis."
+                ),
+                history=[],
+                image_context=image_context,
+            )
+        except Exception:
+            conseil = ""
 
         return DiagnosisResponse(
             maladie=diagnosis["maladie"],

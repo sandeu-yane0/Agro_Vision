@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
   ListRenderItemInfo,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -18,7 +19,7 @@ import COLORS from "../../constants/colors";
 import ConversationItem from "../../components/ConversationItem";
 import * as storage from "../../services/storage";
 
-// â”€â”€â”€ Ã‰cran Historique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Ã‰cran Historique â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -44,31 +45,32 @@ export default function HistoryScreen() {
     }, [])
   );
 
-  // â”€â”€â”€ Supprimer une conversation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Supprimer une conversation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const handleDelete = useCallback((id: string, title: string) => {
+    const doDelete = async () => {
+      await storage.deleteConversation(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`Supprimer "${title}" ?`)) doDelete();
+      return;
+    }
     Alert.alert(
       "Supprimer la conversation",
       `Voulez-vous supprimer "${title}" ?`,
       [
         { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: async () => {
-            await storage.deleteConversation(id);
-            setConversations((prev) => prev.filter((c) => c.id !== id));
-          },
-        },
+        { text: "Supprimer", style: "destructive", onPress: doDelete },
       ]
     );
   }, []);
 
-  // â”€â”€â”€ Supprimer tout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Supprimer tout â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const handleClearAll = useCallback(() => {
     if (conversations.length === 0) return;
     Alert.alert(
       "Tout supprimer",
-      "Voulez-vous supprimer toutes les conversations ? Cette action est irrÃ©versible.",
+      "Voulez-vous supprimer toutes les conversations ?",
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -83,26 +85,27 @@ export default function HistoryScreen() {
     );
   }, [conversations]);
 
-  // â”€â”€â”€ Ouvrir une conversation (naviguer vers chat) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const handleOpen = useCallback((_conversation: Conversation) => {
-    // Pour l'instant, on navigue vers le chat
-    // TODO: passer les messages de la conversation au chat
-    router.push("/");
+  // â"€â"€â"€ Ouvrir une conversation (naviguer vers chat) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+  const handleOpen = useCallback((conversation: Conversation) => {
+    router.push(`/?conversationId=${conversation.id}`);
   }, [router]);
 
-  // â”€â”€â”€ Rendu d'un item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Rendu d'un item â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const renderItem = ({ item }: ListRenderItemInfo<Conversation>) => (
     <View style={styles.itemWrapper}>
-      <ConversationItem
-        conversation={item}
-        onPress={() => handleOpen(item)}
-      />
+      <View style={styles.convItemFlex}>
+        <ConversationItem
+          conversation={item}
+          onPress={() => handleOpen(item)}
+        />
+      </View>
       <TouchableOpacity
         style={styles.deleteBtn}
         onPress={() => handleDelete(item.id, item.title)}
         activeOpacity={0.7}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="trash-outline" size={17} color={COLORS.DANGER} />
+        <Ionicons name="trash-outline" size={18} color={COLORS.DANGER} />
       </TouchableOpacity>
     </View>
   );
@@ -123,7 +126,7 @@ export default function HistoryScreen() {
         </TouchableOpacity>
       )}
 
-      {/* â”€â”€â”€ Vide â”€â”€â”€ */}
+      {/* â"€â"€â"€ Vide â"€â"€â"€ */}
       {!loading && conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons
@@ -145,7 +148,7 @@ export default function HistoryScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        /* â”€â”€â”€ Liste â”€â”€â”€ */
+        /* â"€â"€â"€ Liste â"€â"€â"€ */
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
@@ -201,14 +204,22 @@ const styles = StyleSheet.create({
 
   // Item wrapper (pour le bouton delete)
   itemWrapper: {
-    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  convItemFlex: {
+    flex: 1,
   },
   deleteBtn: {
-    position: "absolute",
-    right: 44,
-    top: "50%",
-    transform: [{ translateY: -12 }],
-    padding: 6,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.BG_CARD,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // Vide

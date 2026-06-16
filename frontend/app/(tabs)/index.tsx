@@ -12,7 +12,7 @@ import {
   FlatList,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 
@@ -28,7 +28,7 @@ import * as offlineQueue from "../../services/offlineQueue";
 import { QueuedDiagnosis } from "../../services/offlineQueue";
 import { useNetworkStatus } from "../../lib/useNetworkStatus";
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function getTimestamp(): string {
   return new Date().toLocaleTimeString("fr-FR", {
@@ -49,19 +49,19 @@ const GRAVITE_EMOJI: Record<string, string> = {
 };
 
 function formatDiagnosisMessage(diag: DiagnosisResult): string {
-  const emoji = GRAVITE_EMOJI[diag.gravite] ?? "🔍";
-  let text = `${emoji} **${diag.maladie}** — ${diag.confiance}% de confiance\n\n`;
+  const indicator = GRAVITE_EMOJI[diag.gravite] ?? "—";
+  let text = `${indicator} **${diag.maladie}** — ${diag.confiance}% de confiance\n\n`;
   text += `**Gravité :** ${diag.gravite}\n`;
   text += `**Cause :** ${diag.cause}\n\n`;
   text += `**Traitement :** ${diag.traitement}\n\n`;
   text += `**Prévention :** ${diag.prevention}`;
-  if (diag.conseil_llm) {
-    text += `\n\n💬 ${diag.conseil_llm}`;
+  if (diag.conseil_llm?.trim()) {
+    text += `\n\n**Conseil :** ${diag.conseil_llm}`;
   }
   return text;
 }
 
-// â”€â”€â”€ IcÃ´nes suggestions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ IcÃ´nes suggestions â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   camera:      "camera-outline",
@@ -72,7 +72,7 @@ const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   "trending-up": "trending-up-outline",
 };
 
-// â”€â”€â”€ Ã‰cran principal Chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Ã‰cran principal Chat â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -83,6 +83,21 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping]         = useState(false);
   const [conversationId, setConversationId] = useState(generateId());
   const isConnected                     = useNetworkStatus();
+
+
+  const { conversationId: openConvId } = useLocalSearchParams<{ conversationId?: string }>();
+
+  useEffect(() => {
+    if (!openConvId) return;
+    (async () => {
+      const convs = await storage.getAllConversations();
+      const conv = convs.find((c) => c.id === openConvId);
+      if (conv) {
+        setMessages(conv.messages);
+        setConversationId(conv.id);
+      }
+    })();
+  }, [openConvId]);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -148,7 +163,7 @@ export default function ChatScreen() {
     }
   }, [isConnected, processOfflineQueue]);
 
-  // â”€â”€â”€ Envoi d'un message â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Envoi d'un message â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   const handleSend = useCallback(
     async (text?: string) => {
@@ -158,42 +173,26 @@ export default function ChatScreen() {
       const userMessage: Message = {
         id:          generateId(),
         role:        "user",
-        content:     content || "ðŸ“· Photo envoyÃ©e",
+        content:     content || "📷 Photo envoyée",
         timestamp:   getTimestamp(),
         imageUri:    imageUri ?? undefined,
         messageType: imageUri ? "diagnosis" : "text",
       };
 
-      // ── Hors-ligne avec photo : mise en file d'attente ──────────────────
-      if (!isConnected && imageUri) {
-        const pendingMessage: Message = { ...userMessage, pending: true };
-        const messagesWithPending = [...messages, pendingMessage];
-        setMessages(messagesWithPending);
-        setInputText("");
-        setImageUri(null);
-
-        const conv: Conversation = {
-          id:       conversationId,
-          title:    storage.generateTitle(content),
-          preview:  "📷 Diagnostic en attente de connexion",
-          date:     new Date().toLocaleDateString("fr-FR", {
-            day: "numeric",
-            month: "short",
-          }),
-          messages: messagesWithPending,
+      // ── Hors-ligne sans photo : message texte impossible sans internet ──
+      if (!isConnected && !imageUri) {
+        const errMessage: Message = {
+          id:          generateId(),
+          role:        "assistant",
+          content:     "Vous êtes hors-ligne. Le chat texte nécessite une connexion internet. Le diagnostic photo fonctionne sans connexion.",
+          timestamp:   getTimestamp(),
+          messageType: "text",
         };
-        await storage.saveConversation(conv);
-
-        await offlineQueue.addToQueue({
-          id:              generateId(),
-          conversationId,
-          userMessageId:   pendingMessage.id,
-          imageUri:        imageUri,
-          createdAt:       Date.now(),
-        });
-
+        setMessages([...messages, userMessage, errMessage]);
+        setInputText("");
         return;
       }
+      // ── Si hors-ligne avec photo : on tente quand même le backend local ─
 
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
@@ -256,7 +255,7 @@ export default function ChatScreen() {
         const errMsg: Message = {
           id:          generateId(),
           role:        "assistant",
-          content:     "âŒ DÃ©solÃ©, une erreur s'est produite. VÃ©rifiez votre connexion et rÃ©essayez.",
+          content:     "Désolé, une erreur s'est produite. Vérifiez que le backend est lancé (uvicorn) et réessayez.",
           timestamp:   getTimestamp(),
           messageType: "text",
         };
@@ -268,13 +267,13 @@ export default function ChatScreen() {
     [inputText, imageUri, messages, conversationId, isConnected]
   );
 
-  // â”€â”€â”€ Nouvelle conversation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Nouvelle conversation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   const handleNewConversation = useCallback(() => {
     if (messages.length === 0) return;
     Alert.alert(
       "Nouvelle conversation",
-      "Voulez-vous dÃ©marrer une nouvelle conversation ? La conversation actuelle sera sauvegardÃ©e.",
+      "Voulez-vous démarrer une nouvelle conversation ? La conversation actuelle sera sauvegardée.",
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -289,14 +288,14 @@ export default function ChatScreen() {
     );
   }, [messages]);
 
-  // â”€â”€â”€ SÃ©lection image â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ SÃ©lection image â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   const handlePickImage = useCallback(async () => {
     const uri = await pickImage();
     if (uri) setImageUri(uri);
   }, []);
 
-  // â”€â”€â”€ Ã‰tat initial : Ã©cran de bienvenue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Ã‰tat initial : Ã©cran de bienvenue â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   const showWelcome = messages.length === 0;
 
@@ -315,7 +314,7 @@ export default function ChatScreen() {
     </TouchableOpacity>
   );
 
-  // â”€â”€â”€ Rendu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€â"€ Rendu â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   return (
     <KeyboardAvoidingView
@@ -330,7 +329,7 @@ export default function ChatScreen() {
         <View style={styles.offlineBanner}>
           <Ionicons name="cloud-offline-outline" size={16} color={COLORS.WARNING} />
           <Text style={styles.offlineBannerText}>
-            Mode hors-ligne — les diagnostics photo seront analysés à la reconnexion
+            Mode hors-ligne — le diagnostic photo fonctionne, le chat texte est indisponible
           </Text>
         </View>
       )}
@@ -358,10 +357,10 @@ export default function ChatScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {showWelcome ? (
-          /* â”€â”€â”€ Ã‰tat initial : bienvenue â”€â”€â”€ */
+          /* â"€â"€â"€ Ã‰tat initial : bienvenue â"€â"€â"€ */
           <View style={styles.welcomeContainer}>
             <View style={styles.aiAvatar}>
-              <Text style={styles.aiAvatarEmoji}>ðŸŒ±</Text>
+              <Text style={styles.aiAvatarEmoji}>🌱</Text>
             </View>
 
             <Text style={styles.welcomeTitle}>
@@ -386,7 +385,7 @@ export default function ChatScreen() {
             />
           </View>
         ) : (
-          /* â”€â”€â”€ Messages â”€â”€â”€ */
+          /* â"€â"€â"€ Messages â"€â"€â"€ */
           <View style={styles.messagesContainer}>
             {messages.map((msg) => (
               <ChatBubble
@@ -400,7 +399,7 @@ export default function ChatScreen() {
         )}
       </ScrollView>
 
-      {/* â”€â”€â”€ Miniature image sÃ©lectionnÃ©e â”€â”€â”€ */}
+      {/* â"€â"€â"€ Miniature image sÃ©lectionnÃ©e â"€â"€â"€ */}
       {imageUri && (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: imageUri }} style={styles.imagePreview} />
@@ -413,7 +412,7 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {/* â”€â”€â”€ Barre d'input â”€â”€â”€ */}
+      {/* â"€â"€â"€ Barre d'input â"€â"€â"€ */}
       <View style={styles.inputBar}>
         {/* Bouton photo */}
         <TouchableOpacity
@@ -429,7 +428,7 @@ export default function ChatScreen() {
           style={styles.textInput}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Message Ã  AgroVision..."
+          placeholder="Message à AgroVision..."
           placeholderTextColor={COLORS.TEXT_MUTED}
           multiline
           maxLength={1000}
@@ -501,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // â”€â”€â”€ Bienvenue â”€â”€â”€
+  // â"€â"€â"€ Bienvenue â"€â"€â"€
   welcomeContainer: {
     alignItems: "center",
     paddingHorizontal: 20,
@@ -578,13 +577,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
 
-  // â”€â”€â”€ Messages â”€â”€â”€
+  // â"€â"€â"€ Messages â"€â"€â"€
   messagesContainer: {
     width: "100%",
     paddingTop: 8,
   },
 
-  // â”€â”€â”€ Image preview â”€â”€â”€
+  // â"€â"€â"€ Image preview â"€â"€â"€
   imagePreviewContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -604,7 +603,7 @@ const styles = StyleSheet.create({
     left: 52,
   },
 
-  // â”€â”€â”€ Barre input â”€â”€â”€
+  // â"€â"€â"€ Barre input â"€â"€â"€
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",

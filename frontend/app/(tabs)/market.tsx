@@ -17,7 +17,7 @@ import COLORS from "../../constants/colors";
 import MarketCard from "../../components/MarketCard";
 import { getMarketPrices } from "../../services/api";
 
-// â”€â”€â”€ Badge LIVE clignotant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Badge LIVE clignotant â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function LiveBadge() {
   const pulse = useRef(new Animated.Value(1)).current;
@@ -39,7 +39,7 @@ function LiveBadge() {
   );
 }
 
-// â”€â”€â”€ Skeleton card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Skeleton card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function SkeletonCard() {
   const shimmer = useRef(new Animated.Value(0.4)).current;
@@ -62,7 +62,7 @@ function SkeletonCard() {
   );
 }
 
-// â”€â”€â”€ Ã‰cran MarchÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Ã‰cran MarchÃ© â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 type ScreenState = "idle" | "loading" | "error";
 
@@ -110,7 +110,7 @@ export default function MarketScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* â”€â”€â”€ En-tÃªte â”€â”€â”€ */}
+      {/* â"€â"€â"€ En-tÃªte â"€â"€â"€ */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerSubtitle}>
@@ -129,7 +129,7 @@ export default function MarketScreen() {
         </Animated.View>
       </View>
 
-      {/* â”€â”€â”€ Contenu â”€â”€â”€ */}
+      {/* â"€â"€â"€ Contenu â"€â"€â"€ */}
       {state === "loading" ? (
         <View style={styles.listContent}>
           {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
@@ -159,7 +159,7 @@ export default function MarketScreen() {
           }
           ListFooterComponent={
             <Text style={styles.footerNote}>
-              ðŸ“Š Sources : MINADER Cameroun | Open Food Facts | MarchÃ©s locaux
+              Sources : MINADER Cameroun | Open Food Facts | Marchés locaux
             </Text>
           }
         />
