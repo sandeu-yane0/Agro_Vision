@@ -22,6 +22,41 @@ function isWeatherQuery(message: string): boolean {
   return WEATHER_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+// ─── Périmètre agriculture / app ───────────────────────────────────────────
+
+const AGRICULTURE_KEYWORDS = [
+  "agricult", "culture", "champ", "récolt", "recolt", "sol", "terre", "ferme",
+  "plante", "plant", "feuille", "graine", "semence", "semis", "irrigation",
+  "engrais", "fertilisant", "npk", "maladie", "tache", "jaune", "pourri",
+  "rentabilité", "rentabilite", "superficie", "hectare", "profit", "calcul",
+  "marché", "marche", "prix", "fcfa", "vente", "coût", "cout",
+  "météo", "meteo", "pluie", "climat", "saison", "planter",
+  "maïs", "mais", "manioc", "plantain", "arachide", "tomate", "cacao",
+  "café", "cafe", "riz", "élevage", "elevage", "bétail", "betail",
+  "coopérative", "cooperative", "agriculteur", "profil", "certification",
+  "historique", "diagnostic", "photo",
+];
+
+const OFF_TOPIC_KEYWORDS = [
+  "football", "foot ", "match", "ballon d'or", "champions league",
+  "politique", "élection", "election", "président", "president",
+  "musique", "chanson", "film", "cinéma", "cinema", "série", "serie",
+  "jeu vidéo", "jeu video", "playstation", "xbox",
+  "code", "javascript", "python", "programmation",
+  "recette de cuisine", "horoscope", "célébrité", "celebrite",
+];
+
+function isOffTopic(message: string): boolean {
+  const lower = message.toLowerCase();
+  if (OFF_TOPIC_KEYWORDS.some((kw) => lower.includes(kw))) return true;
+  return !AGRICULTURE_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+const OFF_TOPIC_RESPONSE =
+  "Je suis spécialisé dans l'agriculture et les fonctionnalités d'AgroVision. " +
+  "Cette question sort de mon domaine — posez-moi plutôt une question sur vos cultures, " +
+  "la météo, les prix du marché ou la rentabilité agricole.";
+
 function detectVille(message: string): string {
   const lower = message.toLowerCase();
   for (const [alias, canonical] of Object.entries(VILLES_CAMEROUN)) {
@@ -46,35 +81,40 @@ function getSimulatedResponse(message: string): string {
   const lowerMsg = message.toLowerCase();
 
   if (lowerMsg.includes("rentabilité") || lowerMsg.includes("superficie") || lowerMsg.includes("profit") || lowerMsg.includes("calcul")) {
-    return `💰 **Calcul de Rentabilité**\n\nPour calculer votre rentabilité, j'ai besoin de quelques informations :\n\n1️⃣ Quelle est la superficie de votre exploitation ? (en hectares)\n2️⃣ Quelle culture souhaitez-vous analyser ?\n3️⃣ Quel est votre budget d'investissement estimé ?\n\nRépondez à ces questions et je ferai le calcul complet pour vous ! 📊`;
+    return `**Calcul de rentabilité**\n\nPour calculer votre rentabilité, j'ai besoin de quelques informations :\n\n1. Quelle est la superficie de votre exploitation ? (en hectares)\n2. Quelle culture souhaitez-vous analyser ?\n3. Quel est votre budget d'investissement estimé ?\n\nRépondez à ces questions et je ferai le calcul complet pour vous.`;
   }
 
   if (lowerMsg.includes("maladie") || lowerMsg.includes("tache") || lowerMsg.includes("jaune") || lowerMsg.includes("feuille") || lowerMsg.includes("photo") || lowerMsg.includes("analyser")) {
-    return `📷 **Diagnostic de Maladie**\n\nPour diagnostiquer la maladie de votre culture, envoyez-moi une **photo** claire de la plante affectée.\n\nConseils pour une meilleure photo :\n• Prenez la photo en pleine lumière\n• Cadrez sur les zones touchées (feuilles, tiges, fruits)\n• La résolution doit être suffisante pour voir les détails\n\nAttendez mon analyse ! 🔬`;
+    return `**Diagnostic de maladie**\n\nPour diagnostiquer la maladie de votre culture, envoyez-moi une **photo** claire de la plante affectée.\n\nConseils pour une meilleure photo :\n• Prenez la photo en pleine lumière\n• Cadrez sur les zones touchées (feuilles, tiges, fruits)\n• La résolution doit être suffisante pour voir les détails\n\nJ'analyserai l'image dès réception.`;
   }
 
   if (lowerMsg.includes("engrais") || lowerMsg.includes("fertilisant") || lowerMsg.includes("npk")) {
-    return `🌿 **Conseils Engrais**\n\nPour une fertilisation optimale au Cameroun :\n\n**Maïs :** NPK 20-10-10 au semis (200 kg/ha), puis Urée au tallage (100 kg/ha)\n\n**Manioc :** NPK 10-10-20 (150 kg/ha) — riche en potassium pour les tubercules\n\n**Cacao :** Fumure organique + NPK 12-12-17+2MgO (2 kg/pied/an)\n\n⚠️ Toujours incorporer l'engrais après une pluie ou irrigation pour éviter la brûlure.`;
+    return `**Conseils engrais**\n\nPour une fertilisation optimale au Cameroun :\n\n**Maïs :** NPK 20-10-10 au semis (200 kg/ha), puis Urée au tallage (100 kg/ha)\n\n**Manioc :** NPK 10-10-20 (150 kg/ha) — riche en potassium pour les tubercules\n\n**Cacao :** Fumure organique + NPK 12-12-17+2MgO (2 kg/pied/an)\n\nToujours incorporer l'engrais après une pluie ou irrigation pour éviter la brûlure.`;
   }
 
   if (lowerMsg.includes("planter") || lowerMsg.includes("semis") || lowerMsg.includes("période") || lowerMsg.includes("saison") || lowerMsg.includes("quand")) {
-    return `📅 **Calendrier Agricole Cameroun**\n\n**Grande saison des pluies (mars–juin) :**\n• Maïs 🌽 — semis idéal en mars-avril\n• Arachides 🥜 — semis en mars-mai\n• Légumes verts — toute la saison\n\n**Petite saison (août–novembre) :**\n• Maïs 🌽 — 2ème cycle possible\n• Manioc 🥔 — plantation possible toute l'année\n\n**Saison sèche :** Privilégiez les cultures avec irrigation ou le stockage/transformation.`;
+    return `**Calendrier agricole Cameroun**\n\n**Grande saison des pluies (mars–juin) :**\n• Maïs — semis idéal en mars-avril\n• Arachides — semis en mars-mai\n• Légumes verts — toute la saison\n\n**Petite saison (août–novembre) :**\n• Maïs — 2ème cycle possible\n• Manioc — plantation possible toute l'année\n\n**Saison sèche :** Privilégiez les cultures avec irrigation ou le stockage/transformation.`;
   }
 
   if (isWeatherQuery(lowerMsg)) {
-    return `☁️ **Météo Agricole**\n\nDonnées météo indisponibles (serveur hors ligne).\n\nConsultez l'IRAD Cameroun ou Météo France Afrique pour les prévisions locales.`;
+    return `**Météo agricole**\n\nDonnées météo indisponibles (serveur hors ligne).\n\nConsultez l'IRAD Cameroun ou Météo France Afrique pour les prévisions locales.`;
   }
 
   if (lowerMsg.includes("cacao") || lowerMsg.includes("café") || lowerMsg.includes("prix")) {
-    return `📈 **Informations Prix**\n\nConsultez l'onglet **"Marché"** pour les prix en temps réel des cultures au Cameroun.\n\n**Tendances actuelles (2025) :**\n• Cacao : ~1 650 FCFA/kg (hausse mondiale)\n• Café Robusta : ~1 200 FCFA/kg (stable)\n• Maïs : ~185 FCFA/kg (bonne demande)\n\n💡 Les prix fluctuent selon les marchés locaux. Vérifiez régulièrement l'onglet Marché !`;
+    return `**Informations prix**\n\nConsultez l'onglet **"Marché"** pour les prix en temps réel des cultures au Cameroun.\n\n**Tendances actuelles (2025) :**\n• Cacao : ~1 650 FCFA/kg (hausse mondiale)\n• Café Robusta : ~1 200 FCFA/kg (stable)\n• Maïs : ~185 FCFA/kg (bonne demande)\n\nLes prix fluctuent selon les marchés locaux. Vérifiez régulièrement l'onglet Marché.`;
   }
 
   if (lowerMsg.includes("bonjour") || lowerMsg.includes("salut") || lowerMsg.includes("hello") || lowerMsg.includes("bonsoir")) {
-    return `🌱 **Bonjour et bienvenue sur AgroVision !**\n\nJe suis votre agronome IA disponible 24h/24. Je peux vous aider avec :\n\n• 📷 **Diagnostic maladies** — Envoyez une photo\n• 💰 **Calcul rentabilité** — Analyse financière\n• 🌿 **Conseils culture** — Techniques et bonnes pratiques\n• ☁️ **Météo agricole** — Prévisions locales\n• 📈 **Prix du marché** — Cours en temps réel\n\nQue puis-je faire pour vous aujourd'hui ?`;
+    return `**Bonjour et bienvenue sur AgroVision**\n\nJe suis votre agronome IA disponible 24h/24. Je peux vous aider avec :\n\n• **Diagnostic maladies** — Envoyez une photo\n• **Calcul rentabilité** — Analyse financière\n• **Conseils culture** — Techniques et bonnes pratiques\n• **Météo agricole** — Prévisions locales\n• **Prix du marché** — Cours en temps réel\n\nQue puis-je faire pour vous aujourd'hui ?`;
+  }
+
+  // Hors périmètre agriculture/app → ne pas répondre à la question
+  if (isOffTopic(lowerMsg)) {
+    return OFF_TOPIC_RESPONSE;
   }
 
   // Réponse générale agriculture camerounaise
-  return `🌾 **Conseil AgroVision**\n\nMerci pour votre question sur l'agriculture camerounaise !\n\nPour vous donner les meilleurs conseils, pourriez-vous préciser :\n• Quelle est votre culture principale ?\n• Quelle est votre région (Centre, Littoral, Ouest, Nord, etc.) ?\n• Quel est le problème ou la demande spécifique ?\n\n💡 **Astuce :** Vous pouvez aussi envoyer une **photo** de votre culture pour un diagnostic précis, ou demander un **calcul de rentabilité** pour optimiser vos revenus.`;
+  return `**Conseil AgroVision**\n\nMerci pour votre question sur l'agriculture camerounaise.\n\nPour vous donner les meilleurs conseils, pourriez-vous préciser :\n• Quelle est votre culture principale ?\n• Quelle est votre région (Centre, Littoral, Ouest, Nord, etc.) ?\n• Quel est le problème ou la demande spécifique ?\n\nVous pouvez aussi envoyer une **photo** de votre culture pour un diagnostic précis, ou demander un **calcul de rentabilité** pour optimiser vos revenus.`;
 }
 
 // ─── API sendChatMessage ───────────────────────────────────────────────────
@@ -89,7 +129,7 @@ export async function sendChatMessage(
     try {
       const ville = detectVille(message);
       const weatherText = await fetchWeatherText(ville);
-      return `☁️ **Météo Agricole — ${ville.charAt(0).toUpperCase() + ville.slice(1)}**\n\n${weatherText}\n\n💡 Données en temps réel via Open-Meteo. Planifiez vos traitements en évitant les 24h avant une pluie prévue.`;
+      return `**Météo agricole — ${ville.charAt(0).toUpperCase() + ville.slice(1)}**\n\n${weatherText}\n\nDonnées en temps réel via Open-Meteo. Planifiez vos traitements en évitant les 24h avant une pluie prévue.`;
     } catch {
       // Backend météo indisponible → fallback simulation
       return getSimulatedResponse(message);

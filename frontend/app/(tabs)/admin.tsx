@@ -23,8 +23,9 @@ type ReportWithProfiles = {
   reason: string;
   status: "pending" | "reviewed";
   created_at: string;
+  reported_user_id: string;
   reporter: { full_name: string } | null;
-  reported: { full_name: string } | null;
+  reported: { full_name: string; is_suspended: boolean } | null;
 };
 
 type CertRequestWithProfile = {
@@ -59,7 +60,7 @@ export default function AdminScreen() {
     const { data } = await supabase
       .from("account_reports")
       .select(
-        "id, reason, status, created_at, reporter:profiles!account_reports_reporter_id_fkey(full_name), reported:profiles!account_reports_reported_user_id_fkey(full_name)"
+        "id, reason, status, created_at, reported_user_id, reporter:profiles!account_reports_reporter_id_fkey(full_name), reported:profiles!account_reports_reported_user_id_fkey(full_name, is_suspended)"
       )
       .eq("status", "pending")
       .order("created_at", { ascending: false });
@@ -70,7 +71,7 @@ export default function AdminScreen() {
   const loadProfiles = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, region, cultures, avatar_url, bio, role, is_verified, created_at")
+      .select("id, full_name, region, cultures, avatar_url, bio, role, is_verified, is_suspended, created_at")
       .order("full_name");
 
     setProfiles((data as FarmerProfile[]) ?? []);
@@ -110,6 +111,20 @@ export default function AdminScreen() {
   const handleReviewReport = async (id: string) => {
     await supabase.from("account_reports").update({ status: "reviewed" }).eq("id", id);
     setReports((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleToggleSuspend = async (report: ReportWithProfiles, suspend: boolean) => {
+    await supabase.from("profiles").update({ is_suspended: suspend }).eq("id", report.reported_user_id);
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === report.id && r.reported
+          ? { ...r, reported: { ...r.reported, is_suspended: suspend } }
+          : r
+      )
+    );
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === report.reported_user_id ? { ...p, is_suspended: suspend } : p))
+    );
   };
 
   const handleApproveCert = async (req: CertRequestWithProfile) => {
@@ -324,13 +339,30 @@ export default function AdminScreen() {
                 <Text style={styles.cardTime}>
                   {new Date(item.created_at).toLocaleString("fr-FR")}
                 </Text>
-                <TouchableOpacity
-                  style={styles.reviewBtn}
-                  onPress={() => handleReviewReport(item.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.reviewText}>Marquer traité</Text>
-                </TouchableOpacity>
+                {item.reported?.is_suspended && (
+                  <View style={styles.suspendedTag}>
+                    <Ionicons name="ban-outline" size={12} color={COLORS.DANGER} />
+                    <Text style={styles.suspendedTagText}>Compte suspendu</Text>
+                  </View>
+                )}
+                <View style={styles.certActions}>
+                  <TouchableOpacity
+                    style={item.reported?.is_suspended ? styles.approveBtn : styles.rejectBtn}
+                    onPress={() => handleToggleSuspend(item, !item.reported?.is_suspended)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={item.reported?.is_suspended ? styles.approveText : styles.rejectText}>
+                      {item.reported?.is_suspended ? "Réactiver le compte" : "Suspendre le compte"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.reviewBtn}
+                    onPress={() => handleReviewReport(item.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.reviewText}>Marquer traité</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           />
@@ -522,12 +554,20 @@ const styles = StyleSheet.create({
   cardTime: { fontSize: 11, color: COLORS.TEXT_MUTED },
 
   reviewBtn: {
+    flex: 1,
     backgroundColor: COLORS.PRIMARY,
     borderRadius: 10,
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: "center",
-    marginTop: 6,
   },
+  suspendedTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    marginTop: 4,
+  },
+  suspendedTagText: { fontSize: 11, color: COLORS.DANGER, fontWeight: "600" },
   reviewText: { color: COLORS.WHITE, fontWeight: "700", fontSize: 12 },
 
   row: {

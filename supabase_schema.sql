@@ -329,3 +329,14 @@ CREATE POLICY "Admin traite les demandes"
 
 -- Ajouter 'certification_approved' / 'certification_rejected' / 'certification_revoked'
 -- au type de notification côté client (colonne `type` reste TEXT libre, pas de contrainte à modifier).
+
+-- ─── 14. Suspension de compte (suite à signalement) ────────────────────────
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Policy manquante : sans elle, un admin ne pouvait PAS modifier le profil d'un
+-- autre utilisateur (is_verified, is_suspended...) — seule la policy "Utilisateur
+-- modifie son propre profil" (auth.uid() = id) existait. Les deux policies UPDATE
+-- permissives se combinent en OR.
+CREATE POLICY "Admin modifie tous les profils"
+  ON profiles FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));

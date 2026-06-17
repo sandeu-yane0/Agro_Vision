@@ -27,6 +27,7 @@ import * as storage from "../../services/storage";
 import * as offlineQueue from "../../services/offlineQueue";
 import { QueuedDiagnosis } from "../../services/offlineQueue";
 import { useNetworkStatus } from "../../lib/useNetworkStatus";
+import { useAuth } from "../../context/AuthContext";
 
 // â"€â"€â"€ Helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
@@ -41,16 +42,8 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-const GRAVITE_EMOJI: Record<string, string> = {
-  SAIN: "✅",
-  LÉGER: "🟡",
-  MOYEN: "🟠",
-  CRITIQUE: "🔴",
-};
-
 function formatDiagnosisMessage(diag: DiagnosisResult): string {
-  const indicator = GRAVITE_EMOJI[diag.gravite] ?? "—";
-  let text = `${indicator} **${diag.maladie}** — ${diag.confiance}% de confiance\n\n`;
+  let text = `**${diag.maladie}** — ${diag.confiance}% de confiance\n\n`;
   text += `**Gravité :** ${diag.gravite}\n`;
   text += `**Cause :** ${diag.cause}\n\n`;
   text += `**Traitement :** ${diag.traitement}\n\n`;
@@ -76,6 +69,7 @@ const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export default function ChatScreen() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const [messages, setMessages]         = useState<Message[]>([]);
   const [inputText, setInputText]       = useState("");
@@ -88,16 +82,16 @@ export default function ChatScreen() {
   const { conversationId: openConvId } = useLocalSearchParams<{ conversationId?: string }>();
 
   useEffect(() => {
-    if (!openConvId) return;
+    if (!openConvId || !user) return;
     (async () => {
-      const convs = await storage.getAllConversations();
+      const convs = await storage.getAllConversations(user.id);
       const conv = convs.find((c) => c.id === openConvId);
       if (conv) {
         setMessages(conv.messages);
         setConversationId(conv.id);
       }
     })();
-  }, [openConvId]);
+  }, [openConvId, user]);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -114,6 +108,7 @@ export default function ChatScreen() {
 
   const resolveQueuedDiagnosis = useCallback(
     async (item: QueuedDiagnosis, formatted: string) => {
+      if (!user) return;
       const aiMessage: Message = {
         id:          generateId(),
         role:        "assistant",
@@ -122,14 +117,14 @@ export default function ChatScreen() {
         messageType: "diagnosis",
       };
 
-      const conversations = await storage.getAllConversations();
+      const conversations = await storage.getAllConversations(user.id);
       const conv = conversations.find((c) => c.id === item.conversationId);
       if (conv) {
         const msgIndex = conv.messages.findIndex((m) => m.id === item.userMessageId);
         if (msgIndex >= 0) conv.messages[msgIndex].pending = false;
         conv.messages.push(aiMessage);
         conv.preview = formatted.slice(0, 80);
-        await storage.saveConversation(conv);
+        await storage.saveConversation(user.id, conv);
       }
 
       if (item.conversationId === conversationId) {
@@ -139,7 +134,7 @@ export default function ChatScreen() {
         ]);
       }
     },
-    [conversationId]
+    [conversationId, user]
   );
 
   const processOfflineQueue = useCallback(async () => {
@@ -250,7 +245,7 @@ export default function ChatScreen() {
           }),
           messages: finalMessages,
         };
-        await storage.saveConversation(conv);
+        if (user) await storage.saveConversation(user.id, conv);
       } catch {
         const errMsg: Message = {
           id:          generateId(),
@@ -264,7 +259,7 @@ export default function ChatScreen() {
         setIsTyping(false);
       }
     },
-    [inputText, imageUri, messages, conversationId, isConnected]
+    [inputText, imageUri, messages, conversationId, isConnected, user]
   );
 
   // â"€â"€â"€ Nouvelle conversation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€

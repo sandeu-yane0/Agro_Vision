@@ -63,6 +63,7 @@ export interface FarmerProfile {
   bio: string | null;
   role: "agriculteur" | "admin";
   is_verified: boolean;
+  is_suspended: boolean;
   created_at: string;
   updated_at?: string;
 }

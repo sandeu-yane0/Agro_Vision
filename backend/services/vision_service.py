@@ -278,7 +278,7 @@ def predict_disease(image_bytes: bytes) -> dict:
         "classe_raw": class_key,
     }
     if is_mock:
-        result["note"] = "⚠️ Modèle en cours d'entraînement — résultat de démonstration"
+        result["note"] = "Modèle en cours d'entraînement — résultat de démonstration"
     return result
 
 
@@ -291,7 +291,7 @@ def _mock_prediction() -> dict:
         "traitement": "Appliquer mancozèbe (2g/L) tous les 10 jours.",
         "prevention": "Variétés résistantes et rotation des cultures.",
         "classe_raw": "Corn_(maize)___Common_rust_",
-        "note":       "⚠️ Modèle en cours d'entraînement — résultat de démonstration",
+        "note":       "Modèle en cours d'entraînement — résultat de démonstration",
     }
 
 

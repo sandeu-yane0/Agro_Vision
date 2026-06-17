@@ -70,27 +70,27 @@ def calculate(culture: str, superficie: float, qualite: str = "moyen") -> Dict:
 def format_result_for_llm(result: Dict) -> str:
     """Formate le résultat pour présentation dans le chat."""
     if "erreur" in result:
-        return f"❌ {result['erreur']}"
+        return result["erreur"]
 
     profit = result["profit_net"]
-    rentable = "✅ **Exploitation rentable !**" if result["rentable"] else "⚠️ **Rentabilité négative** — optimisez vos intrants"
+    rentable = "**Exploitation rentable.**" if result["rentable"] else "**Rentabilité négative** — optimisez vos intrants."
 
-    return f"""📊 **Résultats pour {result['superficie']} ha de {result['culture']}** (sol {result['qualite_sol']})
+    return f"""**Résultats pour {result['superficie']} ha de {result['culture']}** (sol {result['qualite_sol']})
 
-🌾 Rendement estimé : **{result['rendement_estime']:,} kg**
+Rendement estimé : **{result['rendement_estime']:,} kg**
 
-💸 **Coûts de production :**
+**Coûts de production :**
   • Semences : {result['cout_semences']:,} FCFA
   • Engrais : {result['cout_engrais']:,} FCFA
   • Main d'œuvre : {result['cout_main_oeuvre']:,} FCFA
   • Autres : {result['cout_autres']:,} FCFA
   • **Total : {result['cout_total']:,} FCFA**
 
-📈 Revenu estimé : **{result['revenu_estime']:,} FCFA**
-✅ Profit net : **{profit:,} FCFA**
-⚖️ Point mort : {result['point_mort']:,} kg à produire
-📉 Marge : {result['marge_pourcentage']}%
-🏪 Prix marché : {result['prix_marche']} FCFA/kg
+Revenu estimé : **{result['revenu_estime']:,} FCFA**
+Profit net : **{profit:,} FCFA**
+Point mort : {result['point_mort']:,} kg à produire
+Marge : {result['marge_pourcentage']}%
+Prix marché : {result['prix_marche']} FCFA/kg
 
 {rentable}
 

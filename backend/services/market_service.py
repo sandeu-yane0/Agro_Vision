@@ -79,13 +79,13 @@ def get_price_by_culture(culture: str) -> Dict | None:
 
 def format_prices_for_llm() -> str:
     """Formate les prix pour contexte LLM."""
-    lines = ["📊 Prix du marché Cameroun (semaine du " + datetime.now().strftime("%d/%m/%Y") + ") :"]
+    lines = ["Prix du marché Cameroun (semaine du " + datetime.now().strftime("%d/%m/%Y") + ") :"]
     for p in PRIX_BASE:
-        arrow = "↑" if p["tendance"] == "up" else "↓" if p["tendance"] == "down" else "→"
+        tendance = "hausse" if p["tendance"] == "up" else "baisse" if p["tendance"] == "down" else "stable"
         var = f"+{p['variation']}" if p["variation"] > 0 else str(p["variation"])
         lines.append(
-            f"{p['emoji']} {p['culture']} : {p['prix_kg']} FCFA/{p['unite']} "
-            f"{arrow} ({var} FCFA) — {p['marche']}"
+            f"{p['culture']} : {p['prix_kg']} FCFA/{p['unite']} "
+            f"({tendance}, {var} FCFA) — {p['marche']}"
         )
     lines.append("Source : Référence MINADER Cameroun")
     return "\n".join(lines)

@@ -18,20 +18,23 @@ import { Conversation } from "../../types/index";
 import COLORS from "../../constants/colors";
 import ConversationItem from "../../components/ConversationItem";
 import * as storage from "../../services/storage";
+import { useAuth } from "../../context/AuthContext";
 
 // â"€â"€â"€ Ã‰cran Historique â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Recharger Ã  chaque fois que l'Ã©cran devient actif
   useFocusEffect(
     useCallback(() => {
+      if (!user) return;
       let active = true;
       (async () => {
-        const convs = await storage.getAllConversations();
+        const convs = await storage.getAllConversations(user.id);
         if (active) {
           // Tri par date dÃ©croissante (plus rÃ©cente en premier)
           const sorted = convs.sort(
@@ -42,13 +45,14 @@ export default function HistoryScreen() {
         }
       })();
       return () => { active = false; };
-    }, [])
+    }, [user])
   );
 
   // â"€â"€â"€ Supprimer une conversation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const handleDelete = useCallback((id: string, title: string) => {
     const doDelete = async () => {
-      await storage.deleteConversation(id);
+      if (!user) return;
+      await storage.deleteConversation(user.id, id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
     };
     if (Platform.OS === "web") {
@@ -63,7 +67,7 @@ export default function HistoryScreen() {
         { text: "Supprimer", style: "destructive", onPress: doDelete },
       ]
     );
-  }, []);
+  }, [user]);
 
   // â"€â"€â"€ Supprimer tout â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const handleClearAll = useCallback(() => {
@@ -77,13 +81,14 @@ export default function HistoryScreen() {
           text: "Tout supprimer",
           style: "destructive",
           onPress: async () => {
-            await storage.clearAllConversations();
+            if (!user) return;
+            await storage.clearAllConversations(user.id);
             setConversations([]);
           },
         },
       ]
     );
-  }, [conversations]);
+  }, [conversations, user]);
 
   // â"€â"€â"€ Ouvrir une conversation (naviguer vers chat) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const handleOpen = useCallback((conversation: Conversation) => {

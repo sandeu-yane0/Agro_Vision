@@ -115,8 +115,9 @@ export default function FarmersScreen() {
   const loadFarmers = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, region, cultures, avatar_url, bio, role, is_verified")
+      .select("id, full_name, region, cultures, avatar_url, bio, role, is_verified, is_suspended")
       .neq("id", user?.id ?? "")
+      .eq("is_suspended", false)
       .order("full_name");
 
     if (!error && data) {

@@ -98,14 +98,14 @@ def format_weather_for_llm(weather: dict) -> str:
     if not weather["previsions"]:
         return "Données météo indisponibles."
 
-    lines = [f"📍 Météo {weather['ville']} — {weather['updated']}"]
+    lines = [f"Météo {weather['ville']} — {weather['updated']}"]
     for j in weather["previsions"][:4]:
         lines.append(
-            f"{j['icon']} {j['date']} : {j['pluie']}mm de pluie, "
+            f"{j['date']} : {j['pluie']}mm de pluie, "
             f"{j['tmin']}°C–{j['tmax']}°C"
         )
     if weather["alertes"]:
-        lines.append("\n⚠️ Alertes :")
+        lines.append("\nAlertes :")
         for a in weather["alertes"][:3]:
             lines.append(f"  • {a['message']}")
     return "\n".join(lines)
