@@ -302,3 +302,30 @@ CREATE POLICY "Marquer ses notifications comme lues"
 
 ALTER PUBLICATION supabase_realtime ADD TABLE cooperative_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+
+-- ─── 13. Demandes de certification ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS certification_requests (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  farmer_id    UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  motivation   TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','revoked')),
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS cert_requests_farmer_idx ON certification_requests (farmer_id, created_at DESC);
+ALTER TABLE certification_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Voir ses propres demandes"
+  ON certification_requests FOR SELECT
+  USING (
+    auth.uid() = farmer_id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+CREATE POLICY "Créer sa demande de certification"
+  ON certification_requests FOR INSERT WITH CHECK (auth.uid() = farmer_id);
+CREATE POLICY "Admin traite les demandes"
+  ON certification_requests FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- Ajouter 'certification_approved' / 'certification_rejected' / 'certification_revoked'
+-- au type de notification côté client (colonne `type` reste TEXT libre, pas de contrainte à modifier).

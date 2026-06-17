@@ -18,11 +18,6 @@ import { useAuth } from "../../context/AuthContext";
 import COLORS from "../../constants/colors";
 import { CULTURES_OPTIONS } from "../../constants/cultures";
 
-// Suggestions rapides (sans emoji ni "Autre")
-const CULTURE_SUGGESTIONS = CULTURES_OPTIONS.filter(
-  (c) => c !== "Autre"
-).map((c) => c.replace(/\s[\u{1F300}-\u{1FFFF}]/u, "").trim());
-
 export default function CreateCooperativeScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -120,7 +115,7 @@ export default function CreateCooperativeScreen() {
         {/* Suggestions rapides */}
         <Text style={styles.suggestLabel}>Suggestions rapides</Text>
         <View style={styles.chipsWrap}>
-          {CULTURE_SUGGESTIONS.map((c) => (
+          {CULTURES_OPTIONS.map((c) => (
             <TouchableOpacity
               key={c}
               style={[styles.chip, culture === c && styles.chipActive]}

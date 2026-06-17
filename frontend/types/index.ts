@@ -137,10 +137,24 @@ export interface AppNotification {
     | "cooperative_invite"
     | "cooperative_join_request"
     | "cooperative_member_joined"
-    | "cooperative_member_refused";
+    | "cooperative_member_refused"
+    | "certification_approved"
+    | "certification_rejected"
+    | "certification_revoked";
   title: string;
   body: string | null;
   data: Record<string, any>;
   is_read: boolean;
   created_at: string;
+}
+
+// ─── Demandes de certification ────────────────────────────────────────────
+
+export interface CertificationRequest {
+  id: string;
+  farmer_id: string;
+  motivation: string;
+  status: "pending" | "approved" | "rejected" | "revoked";
+  created_at: string;
+  reviewed_at: string | null;
 }

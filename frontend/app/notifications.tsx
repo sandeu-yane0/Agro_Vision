@@ -71,8 +71,10 @@ function NotificationCard({
               ? "people"
               : notif.type === "cooperative_join_request"
               ? "person-add"
-              : notif.type === "cooperative_member_joined"
+              : notif.type === "cooperative_member_joined" || notif.type === "certification_approved"
               ? "checkmark-circle"
+              : notif.type === "certification_revoked"
+              ? "shield-outline"
               : "close-circle"
           }
           size={20}

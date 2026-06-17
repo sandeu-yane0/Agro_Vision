@@ -15,12 +15,9 @@ import { StatusBar } from "expo-status-bar";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import COLORS from "../../constants/colors";
-import { FarmerProfile } from "../../types/index";
-
-const CULTURES_OPTIONS = [
-  "Maïs 🌽", "Manioc 🥔", "Plantain 🍌", "Arachide 🥜",
-  "Tomate 🍅", "Cacao 🍫", "Café ☕", "Riz 🌾", "Autre",
-];
+import { FarmerProfile, CertificationRequest } from "../../types/index";
+import VerifiedBadge from "../../components/VerifiedBadge";
+import CultureSelector from "../../components/CultureSelector";
 
 const REGIONS = [
   "Centre", "Littoral", "Ouest", "Nord-Ouest", "Sud-Ouest",
@@ -56,6 +53,23 @@ export default function ProfileScreen() {
   const [bio, setBio]             = useState("");
   const [cultures, setCultures]   = useState<string[]>([]);
 
+  // Certification
+  const [certRequest, setCertRequest]     = useState<CertificationRequest | null>(null);
+  const [showCertForm, setShowCertForm]   = useState(false);
+  const [motivation, setMotivation]       = useState("");
+  const [sendingCert, setSendingCert]     = useState(false);
+
+  const loadCertRequest = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("certification_requests")
+      .select("*")
+      .eq("farmer_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setCertRequest((data as CertificationRequest) ?? null);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -73,16 +87,26 @@ export default function ProfileScreen() {
           setBio(data.bio ?? "");
           setCultures(data.cultures ?? []);
         }
+        await loadCertRequest(user.id);
         if (active) setLoading(false);
       })();
       return () => { active = false; };
-    }, [user])
+    }, [user, loadCertRequest])
   );
 
-  const toggleCulture = (c: string) => {
-    setCultures((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
-    );
+  const handleSubmitCertification = async () => {
+    if (!user || !motivation.trim()) return;
+    setSendingCert(true);
+    const { error } = await supabase.from("certification_requests").insert({
+      farmer_id: user.id,
+      motivation: motivation.trim(),
+    });
+    setSendingCert(false);
+    if (!error) {
+      setMotivation("");
+      setShowCertForm(false);
+      await loadCertRequest(user.id);
+    }
   };
 
   const handleSave = async () => {
@@ -118,6 +142,9 @@ export default function ProfileScreen() {
   }
 
   const displayName = profile.full_name || user?.email?.split("@")[0] || "Agriculteur";
+  const memberSince = profile.created_at
+    ? new Date(profile.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    : null;
 
   return (
     <ScrollView
@@ -130,7 +157,10 @@ export default function ProfileScreen() {
       {/* En-tête profil */}
       <View style={styles.profileHeader}>
         <Avatar name={displayName} size={88} />
-        <Text style={styles.displayName}>{displayName}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.displayName}>{displayName}</Text>
+          <VerifiedBadge verified={!!profile.is_verified} size={18} />
+        </View>
         <Text style={styles.email}>{user?.email}</Text>
         {profile.region && (
           <View style={styles.regionRow}>
@@ -138,7 +168,79 @@ export default function ProfileScreen() {
             <Text style={styles.regionText}>{profile.region}</Text>
           </View>
         )}
+        {memberSince && (
+          <View style={styles.regionRow}>
+            <Ionicons name="calendar-outline" size={13} color={COLORS.TEXT_MUTED} />
+            <Text style={styles.memberSinceText}>Membre depuis le {memberSince}</Text>
+          </View>
+        )}
       </View>
+
+      {/* ─── Certification ─────────────────────────────────────────── */}
+      {!editing && (
+        <View style={styles.certCard}>
+          {profile.is_verified ? (
+            <View style={styles.certRow}>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.ACCENT} />
+              <Text style={styles.certText}>Compte certifié</Text>
+            </View>
+          ) : certRequest?.status === "pending" ? (
+            <View style={styles.certRow}>
+              <Ionicons name="time-outline" size={20} color={COLORS.WARNING} />
+              <Text style={styles.certText}>Demande de certification en attente</Text>
+            </View>
+          ) : certRequest?.status === "rejected" ? (
+            <>
+              <View style={styles.certRow}>
+                <Ionicons name="close-circle-outline" size={20} color={COLORS.DANGER} />
+                <Text style={styles.certText}>Demande refusée</Text>
+              </View>
+              {!showCertForm && (
+                <TouchableOpacity style={styles.certBtn} onPress={() => setShowCertForm(true)} activeOpacity={0.8}>
+                  <Text style={styles.certBtnText}>Refaire une demande</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          ) : !showCertForm ? (
+            <TouchableOpacity style={styles.certBtn} onPress={() => setShowCertForm(true)} activeOpacity={0.8}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.WHITE} />
+              <Text style={styles.certBtnText}>Demander la certification</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {showCertForm && (
+            <View style={styles.certForm}>
+              <Text style={styles.label}>Pourquoi demandez-vous la certification ?</Text>
+              <TextInput
+                style={[styles.input, styles.bioInput]}
+                value={motivation}
+                onChangeText={setMotivation}
+                placeholder="Ex : membre actif depuis 2 ans, fondateur d'une coopérative..."
+                placeholderTextColor={COLORS.TEXT_MUTED}
+                multiline
+                maxLength={300}
+              />
+              <View style={styles.editActions}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCertForm(false)} activeOpacity={0.8}>
+                  <Text style={styles.cancelText}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.saveBtn, (!motivation.trim() || sendingCert) && styles.btnDisabled]}
+                  onPress={handleSubmitCertification}
+                  disabled={!motivation.trim() || sendingCert}
+                  activeOpacity={0.85}
+                >
+                  {sendingCert ? (
+                    <ActivityIndicator color={COLORS.WHITE} size="small" />
+                  ) : (
+                    <Text style={styles.saveText}>Envoyer</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Bio */}
       {!editing && profile.bio && (
@@ -222,21 +324,7 @@ export default function ProfileScreen() {
 
           <View style={styles.fieldWrap}>
             <Text style={styles.label}>Mes cultures</Text>
-            <View style={styles.chipsWrap}>
-              {CULTURES_OPTIONS.map((c) => {
-                const selected = cultures.includes(c);
-                return (
-                  <TouchableOpacity
-                    key={c}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => toggleCulture(c)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <CultureSelector selected={cultures} onChange={setCultures} />
           </View>
 
           <View style={styles.editActions}>
@@ -298,10 +386,36 @@ const styles = StyleSheet.create({
     borderColor: COLORS.PRIMARY_LIGHT,
   },
   avatarText: { color: COLORS.WHITE, fontWeight: "700" },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   displayName: { fontSize: 22, fontWeight: "800", color: COLORS.TEXT_PRIMARY },
   email: { fontSize: 13, color: COLORS.TEXT_MUTED },
   regionRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   regionText: { fontSize: 13, color: COLORS.TEXT_MUTED },
+  memberSinceText: { fontSize: 12, color: COLORS.TEXT_MUTED },
+
+  certCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: COLORS.BG_CARD,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER,
+    gap: 10,
+  },
+  certRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  certText: { fontSize: 13, color: COLORS.TEXT_SECONDARY, fontWeight: "600" },
+  certBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 10,
+    paddingVertical: 11,
+  },
+  certBtnText: { color: COLORS.WHITE, fontWeight: "700", fontSize: 13 },
+  certForm: { gap: 10 },
 
   bioCard: {
     marginHorizontal: 16,
@@ -326,9 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: COLORS.BG_CARD,
   },
-  chipSelected: { backgroundColor: COLORS.PRIMARY, borderColor: COLORS.PRIMARY_LIGHT },
   chipText: { fontSize: 13, color: COLORS.TEXT_SECONDARY },
-  chipTextSelected: { color: COLORS.WHITE, fontWeight: "600" },
 
   editProfileBtn: {
     flexDirection: "row",

@@ -15,8 +15,8 @@ import { StatusBar } from "expo-status-bar";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import COLORS from "../../constants/colors";
-import { CULTURES_OPTIONS } from "../../constants/cultures";
 import AppLogo from "../../components/AppLogo";
+import CultureSelector from "../../components/CultureSelector";
 
 const REGIONS = [
   "Centre", "Littoral", "Ouest", "Nord-Ouest", "Sud-Ouest",
@@ -33,11 +33,9 @@ export default function SignupScreen() {
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState("");
 
-  const toggleCulture = (c: string) => {
-    setSelected((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
-    );
-  };
+  const todayLabel = new Date().toLocaleDateString("fr-FR", {
+    day: "numeric", month: "long", year: "numeric",
+  });
 
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
@@ -147,20 +145,15 @@ export default function SignupScreen() {
           {/* Cultures */}
           <View style={styles.fieldWrap}>
             <Text style={styles.label}>Cultures pratiquées</Text>
-            <View style={styles.chipsWrap}>
-              {CULTURES_OPTIONS.map((c) => {
-                const selected = selectedCultures.includes(c);
-                return (
-                  <TouchableOpacity
-                    key={c}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => toggleCulture(c)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <CultureSelector selected={selectedCultures} onChange={setSelected} />
+          </View>
+
+          {/* Date d'inscription (automatique, lecture seule) */}
+          <View style={styles.fieldWrap}>
+            <Text style={styles.label}>Date d'inscription</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="calendar-outline" size={18} color={COLORS.TEXT_MUTED} style={styles.inputIcon} />
+              <Text style={styles.readonlyText}>{todayLabel}</Text>
             </View>
           </View>
 
@@ -243,6 +236,7 @@ const styles = StyleSheet.create({
   },
   inputIcon: { marginRight: 8 },
   input: { flex: 1, color: COLORS.TEXT_PRIMARY, fontSize: 15, paddingVertical: 13 },
+  readonlyText: { flex: 1, color: COLORS.TEXT_SECONDARY, fontSize: 15, paddingVertical: 13 },
 
   selectBtn: {
     flexDirection: "row",
@@ -267,19 +261,6 @@ const styles = StyleSheet.create({
   dropdownItemActive: { backgroundColor: COLORS.PRIMARY_DARK },
   dropdownText: { fontSize: 15, color: COLORS.TEXT_PRIMARY },
   dropdownTextActive: { color: COLORS.ACCENT, fontWeight: "600" },
-
-  chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    backgroundColor: COLORS.BG_INPUT,
-  },
-  chipSelected: { backgroundColor: COLORS.PRIMARY, borderColor: COLORS.PRIMARY_LIGHT },
-  chipText: { fontSize: 13, color: COLORS.TEXT_SECONDARY },
-  chipTextSelected: { color: COLORS.WHITE, fontWeight: "600" },
 
   errorRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
   errorText: { fontSize: 13, color: COLORS.DANGER, flex: 1 },
